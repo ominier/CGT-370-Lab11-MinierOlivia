@@ -207,7 +207,7 @@
       .filter(d => teamVal === "all" || d.team === teamVal)
       .filter(d => posVal  === "all" || d.position === posVal);
 
-    filtered.sort((a, b) => a[sortKey] - b[sortKey]);
+    filtered.sort((a, b) => b[sortKey] - a[sortKey]);
 
     d3.select("#count").text(`${filtered.length} player${filtered.length !== 1 ? "s" : ""}`);
     d3.select("#no-results").style("display", filtered.length === 0 ? "block" : "none");
@@ -215,7 +215,7 @@
     // D3 matches elements to data — how does it know which card belongs to which player?
     const cards = d3.select("#cards-container")
       .selectAll(".player-card")
-      .data(filtered)
+      .data(filtered, d => d.id)
       .join(
         enter  => enter.append("div").attr("class", "player-card"),
         update => update,
@@ -225,8 +225,7 @@
     cards.html("");
 
     // Each card needs its player's name displayed inside it.
-    cards.append("div").attr("class", "player-name");
-    d3.select("#cards-container").text(d => d.name);
+    cards.append("div").attr("class", "player-name").text(d => d.name);
 
     cards.append("div")
       .attr("class", "position-badge")
@@ -238,14 +237,20 @@
 
     // Each card should show that specific player's stats, not the same values across all cards.
     const statRows = cards.selectAll(".stat-row")
-      .data(statKeys)
+      .data(d => statKeys.map(s => ({...s, player: d})))
       .join("div")
       .attr("class", "stat-row");
 
-    statRows.append("span").attr("class", "stat-label").text(d => d.label);
+    statRows.selectAll("*").remove();
+
+      statRows.append("span")
+      .attr("class", "stat-label")
+      .text(d => d.label);
 
     // Each stat row should display its numeric value.
-    statRows.append("span").attr("class", "stat-value").text(d => d.key);
+    statRows.append("span")
+      .attr("class", "stat-value")
+      .text(d => d.player[d.key]);
   };
 
   d3.select("#filter-team").on("change", render);
